@@ -26,7 +26,7 @@ from typing import (
 from functools import update_wrapper, partial
 
 
-from fastapi import Request
+from fastapi import Request, HTTPException, status
 from pydantic import BaseModel, Field, create_model
 
 from langchain_core.utils.function_calling import (
@@ -182,9 +182,18 @@ async def get_tools(
                             pass
                         elif auth_type == "session":
                             cookies = request.cookies
-                            headers["Authorization"] = (
-                                f"Bearer {request.state.token.credentials}"
-                            )
+                            # Get token from Authorization header if available, otherwise from cookies
+                            request_token = getattr(request.state, 'token', None)
+                            if request_token and hasattr(request_token, 'credentials'):
+                                token = request_token.credentials
+                            elif "token" in request.cookies:
+                                token = request.cookies.get("token")
+                            else:
+                                raise HTTPException(
+                                    status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="No cookie auth credentials found",
+                                )
+                            headers["Authorization"] = f"Bearer {token}"
                         elif auth_type == "system_oauth":
                             cookies = request.cookies
                             oauth_token = extra_params.get("__oauth_token__", None)

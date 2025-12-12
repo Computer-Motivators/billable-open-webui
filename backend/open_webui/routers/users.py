@@ -26,6 +26,7 @@ from open_webui.models.users import (
     UserSettings,
     UserUpdateForm,
 )
+from open_webui.models.token_usage import TokenUsages
 
 from open_webui.constants import ERROR_MESSAGES
 from open_webui.env import SRC_LOG_LEVELS, STATIC_DIR
@@ -608,6 +609,38 @@ async def delete_user_by_id(user_id: str, user=Depends(get_admin_user)):
         status_code=status.HTTP_403_FORBIDDEN,
         detail=ERROR_MESSAGES.ACTION_PROHIBITED,
     )
+
+
+############################
+# Token Usage
+############################
+
+
+@router.get("/admin/users/token-usage")
+async def get_users_token_usage(
+    request: Request,
+    days: int = 30,
+    user=Depends(get_admin_user),
+):
+    """
+    Get token usage summary for all users over the last N days.
+    """
+    usage_dict = TokenUsages.get_all_users_token_usage(days=days)
+    return usage_dict
+
+
+@router.get("/admin/users/{user_id}/token-usage")
+async def get_user_token_usage(
+    request: Request,
+    user_id: str,
+    days: int = 30,
+    user=Depends(get_admin_user),
+):
+    """
+    Get token usage summary for a specific user over the last N days.
+    """
+    usage = TokenUsages.get_user_token_usage(user_id=user_id, days=days)
+    return usage
 
 
 ############################

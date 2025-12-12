@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 
-	import { config } from '$lib/stores';
+	import { config, WEBUI_NAME } from '$lib/stores';
 	import { getBackendConfig } from '$lib/apis';
 	import Database from './Settings/Database.svelte';
 
@@ -442,7 +442,12 @@
 					toast.success($i18n.t('Settings saved successfully!'));
 
 					await tick();
-					await config.set(await getBackendConfig());
+					const backendConfig = await getBackendConfig();
+					await config.set(backendConfig);
+					// Update WEBUI_NAME store if custom name is set
+					if (backendConfig?.name) {
+						WEBUI_NAME.set(backendConfig.name);
+					}
 				}}
 			/>
 		{:else if selectedTab === 'connections'}

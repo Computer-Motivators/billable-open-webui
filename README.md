@@ -106,6 +106,9 @@ This will start the Open WebUI server, which you can access at [http://localhost
 ### Quick Start with Docker 🐳
 
 > [!NOTE]  
+> **For this customized build**, see [DOCKER_BUILD_AND_DEPLOY.md](./DOCKER_BUILD_AND_DEPLOY.md) for comprehensive Docker build and deployment instructions, or [PODMAN_BUILD_AND_DEPLOY.md](./PODMAN_BUILD_AND_DEPLOY.md) for Podman-specific instructions. Both guides include database migration handling and upgrade procedures.
+
+> [!NOTE]  
 > Please note that for certain Docker environments, additional configurations might be needed. If you encounter any connection issues, our detailed guide on [Open WebUI Documentation](https://docs.openwebui.com/) is ready to assist you.
 
 > [!WARNING]

@@ -279,7 +279,12 @@ if os.path.exists(f"{DATA_DIR}/ollama.db"):
 else:
     pass
 
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DATA_DIR}/webui.db")
+# Get DATABASE_URL from environment, with validation
+_raw_database_url = os.environ.get("DATABASE_URL", f"sqlite:///{DATA_DIR}/webui.db")
+# Clean up common mistakes: remove leading dashes or spaces
+DATABASE_URL = _raw_database_url.strip().lstrip('-').lstrip()
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL cannot be empty. Please set a valid database URL.")
 
 DATABASE_TYPE = os.environ.get("DATABASE_TYPE")
 DATABASE_USER = os.environ.get("DATABASE_USER")

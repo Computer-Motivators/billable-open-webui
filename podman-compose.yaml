@@ -1,0 +1,18 @@
+services:
+  open-webui:
+    build:
+      context: /path/to/billable-open-webui
+      dockerfile: Dockerfile
+    image: billable-open-webui:latest
+    container_name: billable-open-webui
+    ports:
+      - "3200:8080"
+    environment:
+      DATABASE_URL: "-sqlite:///./data/webui.db"
+      WEBUI_NAME_CUSTOM: "Platform"
+    volumes:
+      - open-webui:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  open-webui:

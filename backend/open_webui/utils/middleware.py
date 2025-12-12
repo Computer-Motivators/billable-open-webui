@@ -19,7 +19,7 @@ from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, status
 from fastapi.responses import HTMLResponse
 from starlette.responses import Response, StreamingResponse, JSONResponse
 
@@ -1363,9 +1363,18 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                         # No authentication
                         pass
                     elif auth_type == "session":
-                        headers["Authorization"] = (
-                            f"Bearer {request.state.token.credentials}"
-                        )
+                        # Get token from Authorization header if available, otherwise from cookies
+                        request_token = getattr(request.state, 'token', None)
+                        if request_token and hasattr(request_token, 'credentials'):
+                            token = request_token.credentials
+                        elif "token" in request.cookies:
+                            token = request.cookies.get("token")
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="No cookie auth credentials found",
+                            )
+                        headers["Authorization"] = f"Bearer {token}"
                     elif auth_type == "system_oauth":
                         oauth_token = extra_params.get("__oauth_token__", None)
                         if oauth_token:
@@ -2523,6 +2532,20 @@ async def process_chat_response(
                                     usage = data.get("usage", {}) or {}
                                     usage.update(data.get("timings", {}))  # llama.cpp
                                     if usage:
+                                        # Track token usage
+                                        try:
+                                            from open_webui.models.token_usage import TokenUsages
+                                            prompt_tokens = usage.get("prompt_tokens", 0) or usage.get("prompt_eval_count", 0) or 0
+                                            completion_tokens = usage.get("completion_tokens", 0) or usage.get("eval_count", 0) or 0
+                                            if prompt_tokens > 0 or completion_tokens > 0:
+                                                TokenUsages.insert_token_usage(
+                                                    user_id=user.id,
+                                                    input_tokens=int(prompt_tokens),
+                                                    output_tokens=int(completion_tokens),
+                                                )
+                                        except Exception as e:
+                                            log.debug(f"Error tracking token usage: {e}")
+                                        
                                         await event_emitter(
                                             {
                                                 "type": "chat:completion",

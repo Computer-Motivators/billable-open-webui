@@ -116,6 +116,26 @@ export const updateUserRole = async (token: string, id: string, role: string) =>
 	return res;
 };
 
+export const getUsersTokenUsage = async (token: string = '', days: number = 30) => {
+	const res = await fetch(`${WEBUI_API_BASE_URL}/admin/users/token-usage?days=${days}`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+			...(token && { Authorization: `Bearer ${token}` })
+		}
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
+		})
+		.catch((err) => {
+			console.error(err);
+			return null;
+		});
+
+	return res;
+};
+
 export const getUsers = async (
 	token: string,
 	query?: string,

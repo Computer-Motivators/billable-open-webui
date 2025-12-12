@@ -108,6 +108,7 @@ from open_webui.models.functions import Functions
 from open_webui.models.models import Models
 from open_webui.models.users import UserModel, Users
 from open_webui.models.chats import Chats
+from open_webui.models.token_usage import TokenUsage  # Register model with SQLAlchemy
 
 from open_webui.config import (
     # Ollama
@@ -408,6 +409,7 @@ from open_webui.config import (
     DEFAULT_LOCALE,
     OAUTH_PROVIDERS,
     WEBUI_URL,
+    WEBUI_NAME_CUSTOM,
     RESPONSE_WATERMARK,
     # Admin
     ENABLE_ADMIN_CHAT_ACCESS,
@@ -651,7 +653,12 @@ app.state.config = AppConfig(
 )
 app.state.redis = None
 
-app.state.WEBUI_NAME = WEBUI_NAME
+# Assign WEBUI_NAME_CUSTOM to config before accessing it
+app.state.config.WEBUI_NAME_CUSTOM = WEBUI_NAME_CUSTOM
+
+# Use custom name if set, otherwise use default
+custom_name = app.state.config.WEBUI_NAME_CUSTOM
+app.state.WEBUI_NAME = custom_name if custom_name else WEBUI_NAME
 app.state.LICENSE_METADATA = None
 
 

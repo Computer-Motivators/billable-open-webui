@@ -927,6 +927,7 @@ async def get_admin_config(request: Request, user=Depends(get_admin_user)):
     return {
         "SHOW_ADMIN_DETAILS": request.app.state.config.SHOW_ADMIN_DETAILS,
         "WEBUI_URL": request.app.state.config.WEBUI_URL,
+        "WEBUI_NAME_CUSTOM": request.app.state.config.WEBUI_NAME_CUSTOM,
         "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
         "ENABLE_API_KEYS": request.app.state.config.ENABLE_API_KEYS,
         "ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS": request.app.state.config.ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS,
@@ -949,6 +950,7 @@ async def get_admin_config(request: Request, user=Depends(get_admin_user)):
 class AdminConfig(BaseModel):
     SHOW_ADMIN_DETAILS: bool
     WEBUI_URL: str
+    WEBUI_NAME_CUSTOM: Optional[str] = None
     ENABLE_SIGNUP: bool
     ENABLE_API_KEYS: bool
     ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS: bool
@@ -973,6 +975,11 @@ async def update_admin_config(
 ):
     request.app.state.config.SHOW_ADMIN_DETAILS = form_data.SHOW_ADMIN_DETAILS
     request.app.state.config.WEBUI_URL = form_data.WEBUI_URL
+    request.app.state.config.WEBUI_NAME_CUSTOM = form_data.WEBUI_NAME_CUSTOM or ""
+    # Update app state name immediately
+    custom_name = request.app.state.config.WEBUI_NAME_CUSTOM
+    from open_webui.env import WEBUI_NAME
+    request.app.state.WEBUI_NAME = custom_name if custom_name else WEBUI_NAME
     request.app.state.config.ENABLE_SIGNUP = form_data.ENABLE_SIGNUP
 
     request.app.state.config.ENABLE_API_KEYS = form_data.ENABLE_API_KEYS
@@ -1017,6 +1024,7 @@ async def update_admin_config(
     return {
         "SHOW_ADMIN_DETAILS": request.app.state.config.SHOW_ADMIN_DETAILS,
         "WEBUI_URL": request.app.state.config.WEBUI_URL,
+        "WEBUI_NAME_CUSTOM": request.app.state.config.WEBUI_NAME_CUSTOM,
         "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
         "ENABLE_API_KEYS": request.app.state.config.ENABLE_API_KEYS,
         "ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS": request.app.state.config.ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS,

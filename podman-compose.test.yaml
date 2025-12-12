@@ -1,0 +1,99 @@
+version: '3.8'
+
+# Podman Compose configuration for testing the customized Open WebUI build
+# Note: Podman Compose uses the same format as Docker Compose
+# This configuration is designed to work alongside existing Open WebUI deployments
+
+services:
+  # Optional: PostgreSQL for production-like testing
+  postgres:
+    image: docker.io/postgres:15-alpine
+    container_name: billable-test-postgres
+    environment:
+      POSTGRES_DB: webui_test
+      POSTGRES_USER: webui
+      POSTGRES_PASSWORD: test_password_change_in_production
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Use different port to avoid conflicts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webui"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - with-postgres
+
+  # Ollama service (required for chat functionality)
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: billable-test-ollama
+    volumes:
+      - ollama_test_data:/root/.ollama
+    ports:
+      - "11435:11434"  # Use different port to avoid conflicts
+    restart: unless-stopped
+    # Note: GPU support in Podman requires NVIDIA Container Toolkit
+    # and may need additional configuration for rootless mode
+
+  # Customized Open WebUI build
+  open-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_HASH: ${BUILD_HASH:-test-build-$(date +%Y%m%d)}
+        USE_SLIM: ${USE_SLIM:-false}
+    image: billable-open-webui:test
+    container_name: billable-test-webui
+    volumes:
+      - webui_test_data:/app/backend/data
+    depends_on:
+      ollama:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${OPEN_WEBUI_PORT:-3001}:8080"  # Use port 3001 to avoid conflicts
+    environment:
+      # Ollama connection
+      - OLLAMA_BASE_URL=http://ollama:11434
+      
+      # Security
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-test-secret-key-change-in-production}
+      
+      # Database configuration
+      # Option 1: SQLite (default, for quick testing)
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/webui.db}
+      # Option 2: PostgreSQL (uncomment to use)
+      # - DATABASE_URL=postgresql://webui:test_password_change_in_production@postgres:5432/webui_test
+      
+      # Custom software name (optional, can also be set in admin UI)
+      - WEBUI_NAME_CUSTOM=${WEBUI_NAME_CUSTOM:-}
+      
+      # Optional: Enable features
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+      - ENABLE_API_KEYS=${ENABLE_API_KEYS:-true}
+      
+      # Optional: Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # Give more time for migrations on first start
+
+volumes:
+  postgres_test_data:
+    driver: local
+  ollama_test_data:
+    driver: local
+  webui_test_data:
+    driver: local
+

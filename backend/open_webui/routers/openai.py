@@ -10,7 +10,7 @@ import requests
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
-from fastapi import Depends, HTTPException, Request, APIRouter
+from fastapi import Depends, HTTPException, Request, APIRouter, status
 from fastapi.responses import (
     FileResponse,
     StreamingResponse,
@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
 from open_webui.models.models import Models
+from open_webui.models.groups import Groups
 from open_webui.config import (
     CACHE_DIR,
 )
@@ -153,7 +154,17 @@ async def get_headers_and_cookies(
         token = None
     elif auth_type == "session":
         cookies = request.cookies
-        token = request.state.token.credentials
+        # Get token from Authorization header if available, otherwise from cookies
+        request_token = getattr(request.state, 'token', None)
+        if request_token and hasattr(request_token, 'credentials'):
+            token = request_token.credentials
+        elif "token" in request.cookies:
+            token = request.cookies.get("token")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No cookie auth credentials found",
+            )
     elif auth_type == "system_oauth":
         cookies = request.cookies
 
@@ -875,8 +886,27 @@ async def generate_chat_completion(
             "role": user.role,
         }
 
-    url = request.app.state.config.OPENAI_API_BASE_URLS[idx]
-    key = request.app.state.config.OPENAI_API_KEYS[idx]
+    # Check for group-specific API config
+    group_api_config = None
+    user_groups = Groups.get_groups_by_member_id(user.id)
+    for group in user_groups:
+        if group.data and group.data.get("api_config") and group.data["api_config"].get("url"):
+            group_api_config = group.data["api_config"]
+            break
+    
+    if group_api_config:
+        # Use group-specific API config
+        url = group_api_config.get("url")
+        key = group_api_config.get("token", "")
+        # Merge group config with default config
+        api_config = {
+            **api_config,
+            "auth_type": group_api_config.get("auth_type", "bearer"),
+        }
+    else:
+        # Use default connection config
+        url = request.app.state.config.OPENAI_API_BASE_URLS[idx]
+        key = request.app.state.config.OPENAI_API_KEYS[idx]
 
     # Check if model is a reasoning model that needs special handling
     if is_openai_reasoning_model(payload["model"]):
@@ -949,6 +979,21 @@ async def generate_chat_completion(
         else:
             try:
                 response = await r.json()
+                # Track token usage for non-streaming responses
+                if isinstance(response, dict) and "usage" in response:
+                    try:
+                        from open_webui.models.token_usage import TokenUsages
+                        usage = response.get("usage", {})
+                        prompt_tokens = usage.get("prompt_tokens", 0) or 0
+                        completion_tokens = usage.get("completion_tokens", 0) or 0
+                        if prompt_tokens > 0 or completion_tokens > 0:
+                            TokenUsages.insert_token_usage(
+                                user_id=user.id,
+                                input_tokens=int(prompt_tokens),
+                                output_tokens=int(completion_tokens),
+                            )
+                    except Exception as e:
+                        log.debug(f"Error tracking token usage: {e}")
             except Exception as e:
                 log.error(e)
                 response = await r.text()

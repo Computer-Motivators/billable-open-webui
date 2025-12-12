@@ -12,7 +12,7 @@
 
 	import { toast } from 'svelte-sonner';
 
-	import { updateUserRole, getUsers, deleteUserById } from '$lib/apis/users';
+	import { updateUserRole, getUsers, deleteUserById, getUsersTokenUsage } from '$lib/apis/users';
 
 	import Pagination from '$lib/components/common/Pagination.svelte';
 	import ChatBubbles from '$lib/components/icons/ChatBubbles.svelte';
@@ -41,6 +41,7 @@
 
 	let users = null;
 	let total = null;
+	let tokenUsage = {}; // Initialize as empty object
 
 	let query = '';
 	let orderBy = 'created_at'; // default sort key
@@ -91,6 +92,14 @@
 			if (res) {
 				users = res.users;
 				total = res.total;
+			}
+
+			// Load token usage data
+			const usageData = await getUsersTokenUsage(localStorage.token, 30).catch(() => null);
+			if (usageData) {
+				tokenUsage = usageData;
+			} else {
+				tokenUsage = {}; // Ensure it's always an object
 			}
 		} catch (err) {
 			console.error(err);
@@ -335,6 +344,15 @@
 						</div>
 					</th>
 
+					<th
+						scope="col"
+						class="px-2.5 py-2 cursor-pointer select-none"
+					>
+						<div class="flex gap-1.5 items-center">
+							{$i18n.t('Token Usage (30d)')}
+						</div>
+					</th>
+
 					<th scope="col" class="px-2.5 py-2 text-right" />
 				</tr>
 			</thead>
@@ -387,6 +405,27 @@
 
 						<td class=" px-3 py-1">
 							{dayjs(user.created_at * 1000).format('LL')}
+						</td>
+
+						<td class="px-3 py-1">
+							{#if tokenUsage[user.id]}
+								<div class="text-xs">
+									<div>
+										<span class="text-gray-500">{$i18n.t('Input')}:</span>{' '}
+										{tokenUsage[user.id].total_input_tokens.toLocaleString()}
+									</div>
+									<div>
+										<span class="text-gray-500">{$i18n.t('Output')}:</span>{' '}
+										{tokenUsage[user.id].total_output_tokens.toLocaleString()}
+									</div>
+									<div class="font-medium">
+										<span class="text-gray-500">{$i18n.t('Total')}:</span>{' '}
+										{tokenUsage[user.id].total_tokens.toLocaleString()}
+									</div>
+								</div>
+							{:else}
+								<span class="text-xs text-gray-400">-</span>
+							{/if}
 						</td>
 
 						<td class="px-3 py-1 text-right">

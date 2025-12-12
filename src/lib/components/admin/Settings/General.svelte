@@ -720,6 +720,27 @@
 
 					<div class="mb-2.5 w-full justify-between">
 						<div class="flex w-full justify-between">
+							<div class=" self-center text-xs font-medium">{$i18n.t('Software Name')}</div>
+						</div>
+
+						<div class="flex mt-2 space-x-2">
+							<input
+								class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
+								type="text"
+								placeholder={$i18n.t('Enter custom software name (leave empty for default)')}
+								bind:value={adminConfig.WEBUI_NAME_CUSTOM}
+							/>
+						</div>
+
+						<div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+							{$i18n.t(
+								'Customize the name displayed throughout the application. Leave empty to use the default name.'
+							)}
+						</div>
+					</div>
+
+					<div class="mb-2.5 w-full justify-between">
+						<div class="flex w-full justify-between">
 							<div class=" self-center text-xs font-medium">{$i18n.t('WebUI URL')}</div>
 						</div>
 

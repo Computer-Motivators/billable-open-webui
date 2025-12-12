@@ -1,6 +1,6 @@
 import logging
 import copy
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 import aiohttp
 
@@ -269,7 +269,17 @@ async def verify_tool_servers_config(
                     if form_data.auth_type == "bearer":
                         token = form_data.key
                     elif form_data.auth_type == "session":
-                        token = request.state.token.credentials
+                        # Get token from Authorization header if available, otherwise from cookies
+                        request_token = getattr(request.state, 'token', None)
+                        if request_token and hasattr(request_token, 'credentials'):
+                            token = request_token.credentials
+                        elif "token" in request.cookies:
+                            token = request.cookies.get("token")
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="No cookie auth credentials found",
+                            )
                     elif form_data.auth_type == "system_oauth":
                         oauth_token = None
                         try:

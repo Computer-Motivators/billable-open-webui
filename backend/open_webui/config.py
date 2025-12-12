@@ -1121,6 +1121,12 @@ TOOL_SERVER_CONNECTIONS = PersistentConfig(
 
 WEBUI_URL = PersistentConfig("WEBUI_URL", "webui.url", os.environ.get("WEBUI_URL", ""))
 
+WEBUI_NAME_CUSTOM = PersistentConfig(
+    "WEBUI_NAME_CUSTOM",
+    "webui.name",
+    os.environ.get("WEBUI_NAME_CUSTOM", ""),
+)
+
 
 ENABLE_SIGNUP = PersistentConfig(
     "ENABLE_SIGNUP",

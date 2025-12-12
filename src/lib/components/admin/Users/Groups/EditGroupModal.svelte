@@ -7,6 +7,7 @@
 	import Modal from '$lib/components/common/Modal.svelte';
 	import General from './General.svelte';
 	import Permissions from './Permissions.svelte';
+	import ApiKeys from './ApiKeys.svelte';
 	import Users from './Users.svelte';
 	import UserPlusSolid from '$lib/components/icons/UserPlusSolid.svelte';
 	import WrenchSolid from '$lib/components/icons/WrenchSolid.svelte';
@@ -24,7 +25,7 @@
 
 	export let custom = true;
 
-	export let tabs = ['general', 'permissions', 'users'];
+	export let tabs = ['general', 'permissions', 'api_keys', 'users'];
 
 	let selectedTab = 'general';
 	let loading = false;
@@ -224,6 +225,33 @@
 								</button>
 							{/if}
 
+							{#if tabs.includes('api_keys')}
+								<button
+									class="px-0.5 py-1 max-w-fit w-fit rounded-lg flex-1 lg:flex-none flex text-right transition {selectedTab ===
+									'api_keys'
+										? ''
+										: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
+									on:click={() => {
+										selectedTab = 'api_keys';
+									}}
+									type="button"
+								>
+									<div class=" self-center mr-2">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											viewBox="0 0 16 16"
+											fill="currentColor"
+											class="w-4 h-4"
+										>
+											<path
+												d="M8 1a5 5 0 0 0-5 5v1a1.5 1.5 0 0 0 0 3v1a5 5 0 0 0 10 0V10a1.5 1.5 0 0 0 0-3V6a5 5 0 0 0-5-5Zm0 4a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0V6a1 1 0 0 0-1-1Zm2.5 2.5a1 1 0 0 0-1 1v1a1 1 0 1 0 2 0v-1a1 1 0 0 0-1-1Z"
+											/>
+										</svg>
+									</div>
+									<div class=" self-center">{$i18n.t('API Keys')}</div>
+								</button>
+							{/if}
+
 							{#if tabs.includes('users')}
 								<button
 									class="px-0.5 py-1 max-w-fit w-fit rounded-lg flex-1 lg:flex-none flex text-right transition {selectedTab ===
@@ -257,12 +285,14 @@
 									/>
 								{:else if selectedTab == 'permissions'}
 									<Permissions bind:permissions {defaultPermissions} />
+								{:else if selectedTab == 'api_keys'}
+									<ApiKeys bind:data />
 								{:else if selectedTab == 'users'}
 									<Users bind:userCount groupId={group?.id} />
 								{/if}
 							</div>
 
-							{#if ['general', 'permissions'].includes(selectedTab)}
+							{#if ['general', 'permissions', 'api_keys'].includes(selectedTab)}
 								<div class="flex justify-end pt-3 text-sm font-medium gap-1.5">
 									<button
 										class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full flex flex-row space-x-1 items-center {loading
