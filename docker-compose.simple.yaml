@@ -1,7 +1,13 @@
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_HASH: ${BUILD_HASH:-test-build-$(date +%Y%m%d)}
+        USE_SLIM: ${USE_SLIM:-false}
+    image: billable-open-webui:latest
+    container_name: billable-open-webui
     ports:
       - "${OPEN_WEBUI_PORT:-3001}:8080"
     environment:
